@@ -70,9 +70,9 @@ def train(args, pt_dir, chkpt_path, trainloader, valloader, writer, logger, hp, 
                 disc_real = model_d(audio)
                 loss_g = 0.0
                 for (feats_fake, score_fake), (feats_real, _) in zip(disc_fake, disc_real):
-                    loss_g += torch.mean(torch.pow(score_fake - 1.0, 2))
+                    loss_g += torch.mean(torch.sum(torch.pow(score_fake - 1.0, 2), dim=[1, 2]))
                     for feat_f, feat_r in zip(feats_fake, feats_real):
-                        loss_g += hp.model.feat_match * torch.mean(torch.abs(feat_f - feat_r))
+                        loss_g += hp.model.feat_match * torch.mean(torch.sum(torch.abs(feat_f - feat_r), dim=2))
 
                 loss_g.backward()
                 optim_g.step()
@@ -86,8 +86,8 @@ def train(args, pt_dir, chkpt_path, trainloader, valloader, writer, logger, hp, 
                     disc_real = model_d(audio)
                     loss_d = 0.0
                     for (_, score_fake), (_, score_real) in zip(disc_fake, disc_real):
-                        loss_d += torch.mean(torch.pow(score_real - 1.0, 2))
-                        loss_d += torch.mean(torch.pow(score_fake, 2))
+                        loss_d += torch.mean(torch.sum(torch.pow(score_real - 1.0, 2), dim=[1, 2]))
+                        loss_d += torch.mean(torch.sum(torch.pow(score_fake, 2), dim=[1, 2]))
 
                     loss_d.backward()
                     optim_d.step()
