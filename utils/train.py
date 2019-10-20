@@ -64,18 +64,21 @@ def train(args, pt_dir, chkpt_path, trainloader, valloader, writer, logger, hp, 
                 audio = audio.cuda()
 
                 # generator
-                optim_g.zero_grad()
-                fake_audio = model_g(mel)[:, :, :hp.audio.segment_length]
-                disc_fake = model_d(fake_audio)
-                disc_real = model_d(audio)
-                loss_g = 0.0
-                for (feats_fake, score_fake), (feats_real, _) in zip(disc_fake, disc_real):
-                    loss_g += torch.mean(torch.pow(score_fake - 1.0, 2))
-                    for feat_f, feat_r in zip(feats_fake, feats_real):
-                        loss_g += hp.model.feat_match * torch.mean(torch.abs(feat_f - feat_r))
+                loss_g_sum = 0.0
+                for _ in range(hp.train.rep_generator):
+                    optim_g.zero_grad()
+                    fake_audio = model_g(mel)[:, :, :hp.audio.segment_length]
+                    disc_fake = model_d(fake_audio)
+                    disc_real = model_d(audio)
+                    loss_g = 0.0
+                    for (feats_fake, score_fake), (feats_real, _) in zip(disc_fake, disc_real):
+                        loss_g += torch.mean(torch.pow(score_fake - 1.0, 2))
+                        for feat_f, feat_r in zip(feats_fake, feats_real):
+                            loss_g += hp.model.feat_match * torch.mean(torch.abs(feat_f - feat_r))
 
-                loss_g.backward()
-                optim_g.step()
+                    loss_g.backward()
+                    optim_g.step()
+                    loss_g_sum += loss_g
 
                 # discriminator
                 fake_audio = fake_audio.detach()
@@ -95,7 +98,8 @@ def train(args, pt_dir, chkpt_path, trainloader, valloader, writer, logger, hp, 
 
                 step += 1
                 # logging
-                loss_g = loss_g.item()
+                loss_g_avg = loss_g_sum / hp.train.rep_generator
+                loss_g_avg = loss_g_avg.item()
                 loss_d_avg = loss_d_sum / hp.train.rep_discriminator
                 loss_d_avg = loss_d_avg.item()
                 if any([loss_g > 1e8, math.isnan(loss_g), loss_d_avg > 1e8, math.isnan(loss_d_avg)]):

@@ -3,6 +3,7 @@ data: # root path of train/validation data (in absolute path)
   validation: ''
 ---
 train:
+  rep_generator: 1
   rep_discriminator: 1
   num_workers: 32
   batch_size: 16
