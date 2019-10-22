@@ -34,7 +34,7 @@ class MelFromDisk(Dataset):
     def __getitem__(self, idx):
         if self.train:
             idx1 = idx
-            idx2 = self.mapping(idx1)
+            idx2 = self.mapping[idx1]
             return self.my_getitem(idx1), self.my_getitem(idx2)
         else:
             return self.my_getitem(idx)
